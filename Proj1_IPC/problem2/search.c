@@ -12,14 +12,16 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
-int search(int* arr, int size, int factor, int key)
-{
+int* search(int* arr, int size, int factor, int key, int foundIndex[])
+{	
 	int amount = size / factor;
 	int status;
 	int sectionOfChild[factor];
 	pid_t pid[factor];
 
 	unsigned char exit_code;
+
+	int foundIndexI = 0;
 		
 	int num;
 	// Create a number of forks equal to size
@@ -36,7 +38,8 @@ int search(int* arr, int size, int factor, int key)
 
 		if (pid[num / amount] == 0) // Child
 		{
-
+			printf("I am process %d, my parent is %d\n", getpid(), getppid());
+			
 			int foundFlag = 0;
 
 			int end = (num + amount < size) ? num + amount : size;
@@ -46,6 +49,7 @@ int search(int* arr, int size, int factor, int key)
 				if (arr[j] == key)
 				{
 					foundFlag = 1;
+					//foundIndex[foundIndexI++] = j;
 					exit(j % amount);
 				}
 			}
@@ -60,7 +64,8 @@ int search(int* arr, int size, int factor, int key)
 		}
 	}
 
-	for (int k = 0; k < amount; k++)
+	int k;
+	for (k = 0; k < amount; k++)
 	{
 		waitpid(pid[k], &status, 0);
 		sectionOfChild[k] = k * amount;
@@ -68,10 +73,20 @@ int search(int* arr, int size, int factor, int key)
 		if (WIFEXITED(status))
 		{
 			exit_code = WEXITSTATUS(status);
+
+			if (exit_code != 255)
+			{
+				break;
+			}
 		}
 	}
-	
-	return 0;	
+
+	if (exit_code < 255)
+	{
+		printf("I am process %d and I found the key at %d\n", pid[k], exit_code + sectionOfChild[k]);	
+	}	
+
+	return foundIndex;
 }
 
 
@@ -91,9 +106,29 @@ int main(int argc, char* argv[])
 	}
 
 	// Set the keys at each point in the array
-	arr[MAX_NUM / 4] = -50;
-	arr[MAX_NUM / 2] = -50;
-	arr[(3 * MAX_NUM) / 4] = -50; 
+	int key = -50;
+	arr[MAX_NUM / 4] = key;
+	arr[MAX_NUM / 2] = key;
+	arr[(3 * MAX_NUM) / 4] = key; 
+
+	int factor = 4; // Amount of processes to make
+	
+	int ulimit = 31830; // ulimit set by DSV 
+
+	if (factor > ulimit)
+	{
+		printf("Went over ulimit, stopping program...\n");
+		return 0;
+	}	
+	
+	int* foundIndex = (int*) malloc(sizeof(int) * 3);
+
+	foundIndex = search(arr, MAX_NUM, factor, key, foundIndex);
+
+	for (int i = 0; i < 3; i++)
+	{
+		printf("Key found at index: %d\n", foundIndex[i]); // DOESNT WORK
+	}
 
 	// THOUGHTS
 	//
