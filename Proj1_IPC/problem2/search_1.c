@@ -7,15 +7,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include <time.h>
 #include <float.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <sys/time.h>
+#include <time.h>
 
 int* search(int* arr, int size, int factor, int key, int foundIndex[]);
 
 
-#define LIST_SIZE 40
 #define KEY -50
 
 int* search(int* arr, int size, int factor, int key, int foundIndex[])
@@ -98,6 +98,14 @@ int* search(int* arr, int size, int factor, int key, int foundIndex[])
 
 int main(int argc, char* argv[])
 {
+	// Error check on input, the length of the list.
+    if (argc != 2)
+    {
+        printf("Invalid arguments: 1 expected, %d provided. \nRequires a single number, the length of the number list to search.\n", argc - 1);
+        return -1;
+    }
+    int LIST_SIZE = atoi(argv[1]);
+
 	int arr[LIST_SIZE];
 
 	FILE* file = fopen("arrayNums.txt", "r");
@@ -107,33 +115,41 @@ int main(int argc, char* argv[])
 	{
 		if (fscanf(file, "%d", &arr[i]) != 1)
 			break;
-		//printf("arr[%d] = %d\n", i, arr[i]);
 	}
 
 	// Set the keys at each point in the array
 	int key = -50;
 	arr[LIST_SIZE / 4] = key;
 	arr[LIST_SIZE / 2] = key;
-	arr[(3 * LIST_SIZE) / 4] = key; 
+	arr[(3 * LIST_SIZE) / 4] = key;
 
 	int factor = 4; // Amount of processes to make
-	
 	int ulimit = 31830; // ulimit set by DSV 
 
 	if (factor > ulimit)
 	{
 		printf("Went over ulimit, stopping program...\n");
 		return -1;
-	}	
-	
-	int* foundIndex = (int*) malloc(sizeof(int) * 3);
+	}
 
+
+	// Start timing here.
+	struct timeval start, end, diff;
+    gettimeofday(&start, NULL);
+
+	int* foundIndex = (int*) malloc(sizeof(int) * 3);
 	foundIndex = search(arr, LIST_SIZE, factor, key, foundIndex);
 
 	for (i = 0; i < 3; i++)
 	{
 		printf("Key found at index: %d\n", foundIndex[i]); // DOESNT WORK
 	}
+
+	// Stop timing here.
+	gettimeofday(&end, NULL);
+    timersub(&end,   &start, &diff);
+
+	printf("Search took %'8.3f ms.\n", diff.tv_sec*1000.0 + diff.tv_usec/1000.0);
 
 	// THOUGHTS
 	//
