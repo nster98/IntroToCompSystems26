@@ -1,7 +1,7 @@
 // Nathan Glikman
 // Gregory Giovannini
-// Problem 2
-// search.c
+// Problem 2 Question 1
+// search_1.c
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -11,6 +11,12 @@
 #include <float.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+
+int* search(int* arr, int size, int factor, int key, int foundIndex[]);
+
+
+#define LIST_SIZE 40
+#define KEY -50
 
 int* search(int* arr, int size, int factor, int key, int foundIndex[])
 {	
@@ -92,13 +98,12 @@ int* search(int* arr, int size, int factor, int key, int foundIndex[])
 
 int main(int argc, char* argv[])
 {
-	int const MAX_NUM = 40;
-		
-	int arr[MAX_NUM];
+	int arr[LIST_SIZE];
 
 	FILE* file = fopen("arrayNums.txt", "r");
 
-	for (int i = 0; i < MAX_NUM; i++)
+	int i;
+	for (i = 0; i < LIST_SIZE; i++)
 	{
 		if (fscanf(file, "%d", &arr[i]) != 1)
 			break;
@@ -107,9 +112,9 @@ int main(int argc, char* argv[])
 
 	// Set the keys at each point in the array
 	int key = -50;
-	arr[MAX_NUM / 4] = key;
-	arr[MAX_NUM / 2] = key;
-	arr[(3 * MAX_NUM) / 4] = key; 
+	arr[LIST_SIZE / 4] = key;
+	arr[LIST_SIZE / 2] = key;
+	arr[(3 * LIST_SIZE) / 4] = key; 
 
 	int factor = 4; // Amount of processes to make
 	
@@ -118,14 +123,14 @@ int main(int argc, char* argv[])
 	if (factor > ulimit)
 	{
 		printf("Went over ulimit, stopping program...\n");
-		return 0;
+		return -1;
 	}	
 	
 	int* foundIndex = (int*) malloc(sizeof(int) * 3);
 
-	foundIndex = search(arr, MAX_NUM, factor, key, foundIndex);
+	foundIndex = search(arr, LIST_SIZE, factor, key, foundIndex);
 
-	for (int i = 0; i < 3; i++)
+	for (i = 0; i < 3; i++)
 	{
 		printf("Key found at index: %d\n", foundIndex[i]); // DOESNT WORK
 	}
