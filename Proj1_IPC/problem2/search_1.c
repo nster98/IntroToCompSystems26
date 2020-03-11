@@ -13,86 +13,44 @@
 #include <sys/time.h>
 #include <time.h>
 
-int* search(int* arr, int size, int factor, int key, int foundIndex[]);
+int search(int* arr, int size, int factor, int key, int* foundIndexes);
 
 
 #define KEY -50
+#define ULIMIT 31830
 
-int* search(int* arr, int size, int factor, int key, int foundIndex[])
-{	
-	int amount = size / factor;
-	int status;
-	int sectionOfChild[factor];
-	pid_t pid[factor];
+// Single process case.
+int search(int* arr, int size, int factor, int key, int* foundIndexes)
+{
+	int foundCount = 0;;
+	int max = arr[0];
+	size_t i;
 
-	unsigned char exit_code;
+	printf("I am process %d, my parent is %d\n", getpid(), getppid());
 
-	int foundIndexI = 0;
-		
-	int num;
-	// Create a number of forks equal to size
-	for (int i = 0; i < size; i += amount)
+	for (i = 0; i < size; i++)
 	{
-		pid[i / amount] = fork();
-		num = i;
-
-		if (pid[num / amount] < 0) // Error
+		// Max check.
+		if (arr[i] > max)
 		{
-			fprintf(stderr, "Failed to fork\n");
-			exit(-1);
+			max = arr[i];
 		}
-
-		if (pid[num / amount] == 0) // Child
+		// Key check.
+		if (arr[i] == key)
 		{
-			printf("I am process %d, my parent is %d\n", getpid(), getppid());
-			
-			int foundFlag = 0;
-
-			int end = (num + amount < size) ? num + amount : size;
-
-			for (int j = num; j < end; j++)
-			{
-				if (arr[j] == key)
-				{
-					foundFlag = 1;
-					//foundIndex[foundIndexI++] = j;
-					exit(j % amount);
-				}
-			}
-			if (foundFlag == 0)
-			{
-				exit(-1);
-			}
+			foundIndexes[foundCount++] = i;
+			printf("I am process %d and I found the key at %d\n", getpid(), foundIndexes[foundCount - 1]);
 		}
-		else // Parent
+		// All found check.
+		if (foundCount == 3)
 		{
-			
+			break;
 		}
 	}
 
-	int k;
-	for (k = 0; k < amount; k++)
-	{
-		waitpid(pid[k], &status, 0);
-		sectionOfChild[k] = k * amount;
-
-		if (WIFEXITED(status))
-		{
-			exit_code = WEXITSTATUS(status);
-
-			if (exit_code != 255)
-			{
-				break;
-			}
-		}
-	}
-
-	if (exit_code < 255)
-	{
-		printf("I am process %d and I found the key at %d\n", pid[k], exit_code + sectionOfChild[k]);	
-	}	
-
-	return foundIndex;
+	// Return -1 if not all 3 keys were found.
+	int retVal = (foundCount == 3) ? 0 : -1;
+	return retVal;
 }
 
 
@@ -116,15 +74,17 @@ int main(int argc, char* argv[])
 		if (fscanf(file, "%d", &arr[i]) != 1)
 			break;
 	}
+	fclose(file);
 
 	// Set the keys at each point in the array.
-	int key = -50;
+	int key = KEY;
 	arr[LIST_SIZE / 4] = key;
 	arr[LIST_SIZE / 2] = key;
 	arr[(3 * LIST_SIZE) / 4] = key;
 
+	// TODO: calculate the factor here.
 	int factor = 4; // Amount of processes to make
-	int ulimit = 31830; // ulimit set by DSV 
+	int ulimit = ULIMIT; // ulimit set by DSV 
 
 	if (factor > ulimit)
 	{
@@ -137,12 +97,12 @@ int main(int argc, char* argv[])
 	struct timeval start, end, diff;
     gettimeofday(&start, NULL);
 
-	int* foundIndex = (int*) malloc(sizeof(int) * 3);
-	foundIndex = search(arr, LIST_SIZE, factor, key, foundIndex);
+	int* foundIndexes = (int*) malloc(sizeof(int) * 3);
+	search(arr, LIST_SIZE, factor, key, foundIndexes);
 
 	for (i = 0; i < 3; i++)
 	{
-		printf("Key found at index: %d\n", foundIndex[i]); // DOESNT WORK
+		printf("Key found at index: %d\n", foundIndexes[i]); // DOESNT WORK
 	}
 
 	// Stop timing here.
@@ -150,6 +110,8 @@ int main(int argc, char* argv[])
     timersub(&end,   &start, &diff);
 
 	printf("Search took %'8.3f ms.\n", diff.tv_sec*1000.0 + diff.tv_usec/1000.0);
+
+	free(foundIndexes);
 
 	// THOUGHTS
 	//

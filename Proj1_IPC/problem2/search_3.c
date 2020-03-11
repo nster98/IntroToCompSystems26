@@ -17,6 +17,7 @@ int* search(int* arr, int size, int factor, int key, int foundIndex[]);
 
 
 #define KEY -50
+#define ULIMIT 31830
 
 int* search(int* arr, int size, int factor, int key, int foundIndex[])
 {	
@@ -118,13 +119,14 @@ int main(int argc, char* argv[])
 	}
 
 	// Set the keys at each point in the array.
-	int key = -50;
+	int key = KEY;
 	arr[LIST_SIZE / 4] = key;
 	arr[LIST_SIZE / 2] = key;
 	arr[(3 * LIST_SIZE) / 4] = key;
 
+	// TODO: calculate the factor here.
 	int factor = 4; // Amount of processes to make
-	int ulimit = 31830; // ulimit set by DSV 
+	int ulimit = ULIMIT; // ulimit set by DSV 
 
 	if (factor > ulimit)
 	{
