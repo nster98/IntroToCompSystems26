@@ -1,7 +1,7 @@
 // Nathan Glikman
 // Gregory Giovannini
-// Problem 2 Question 1
-// search_1.c
+// Problem 2 Question 3
+// search_3.c
 
 #include <unistd.h>
 #include <stdlib.h>
