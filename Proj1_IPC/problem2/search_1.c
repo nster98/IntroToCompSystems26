@@ -22,7 +22,7 @@ int search(int* arr, int size, int factor, int key, int* foundIndexes);
 // Single process case.
 int search(int* arr, int size, int factor, int key, int* foundIndexes)
 {
-	int foundCount = 0;;
+	int foundCount = 0;
 	int max = arr[0];
 	size_t i;
 
@@ -47,6 +47,8 @@ int search(int* arr, int size, int factor, int key, int* foundIndexes)
 			break;
 		}
 	}
+
+	printf("Max = %d\n", max);
 
 	// Return -1 if not all 3 keys were found.
 	int retVal = (foundCount == 3) ? 0 : -1;
