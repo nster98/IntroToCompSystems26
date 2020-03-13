@@ -1,22 +1,22 @@
-PROBLEM 1
+QUESTION 1
 1k 			Search took    0.033 ms.
 10k 		Search took    0.089 ms.
 100k		Search took    0.754 ms.
 1M			Search took    7.443 ms.
 
-PROBLEM 2
+QUESTION 2
 1k			Search took    8.165 ms.
 10k			Search took  120.441 ms.
 100k		Search took 2269.218 ms.
 1M			Too many processes were created, went over ulimit
 
-PROBLEM 3
+QUESTION 3 - X = 10
 1k			Search took    3.859 ms.
 10k			Search took   10.828 ms.
 100k		Search took   77.797 ms.
 1M			Search took  863.599 ms.
 
-VARIATION
+QUESTION VARIATION
 1k			Search took    0.069 ms.
 10k			Search took   2.034 ms.
 100k		Search took   16.234 ms.
