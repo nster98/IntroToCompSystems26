@@ -8,7 +8,10 @@ When the user kills the root process, the program will still run until it comes 
 
 ## Question 2
 
+What happens if you display the process tree with root getpid() instead of pid() in main()? Which
+other processes appear in the tree and why?
 
+Displaying the process tree at different stages of the process tree will display the process tree according to the node specified. For example, printing the tree using the root will display the process tree in its entirety; all the child processes will be displayed. On the other hand, displaying the process tree under the root node or using a child node will simply display the tree from there, showing all its children and leaf nodes as well.
 
 ## Question 3
 
