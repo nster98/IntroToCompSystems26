@@ -20,6 +20,8 @@ In this part, a fanout tree of processes is used to search the list for the 3 in
 
 Based on the results in timeResults.txt, this method seems to be second-worst. Again, we are creating a large number of processes, which takes considerable time. The only benefit of this method over the method in Question 2 is that now, we are no longer bottlenecked by each previous process when we fork. Forking is happening concurrently.
 
+Increasing the value of X seems to increase the total amount of time the search takes, up to a certain threshold. This is likely because, as above, more unnecessary processes results in a longer overall search time.
+
 ## Variation on the Question
 In this part, we only need to search for the 3 indices. To achieve this, we use a single parent process to spawn a bunch of helper children that will search while the parent spawns more children, until there are enough children to cover the whole list. Additionally, we set the size of each sub-list that a process can search to be 1000 instead of the previous 250, to reduce the number of processes and increase the overall speed.
 
