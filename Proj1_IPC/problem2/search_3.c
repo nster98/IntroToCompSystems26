@@ -17,19 +17,21 @@
 int search(int* arr, int size, int factor, int key, int* foundIndexes);
 int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 					int* foundMax, int procsToSpawn, int procLayer, int procSiblings,
-					int siblingNum, int* procsToSpawnPerChildPrev, pid_t parentOfAll);
+					int siblingNum, int* procsToSpawnPerChildPrev, pid_t parentOfAll, int* parentPipefd);
 int atomicSearch(int* arr, int startIndex, int stopIndex, int key, int* foundIndexes, int* foundMax);
 
 #define KEY -50
 #define ULIMIT 31830
 #define PROC_LIST_SIZE 250
-#define X_PROCS 4
+#define X_PROCS 10
 
 typedef struct {
 	pid_t pid;
 	int foundMax;
 	int foundCount;
-	int foundIndexes[3];
+	int foundIndex1;
+	int foundIndex2;
+	int foundIndex3;
 } pipeArgs;
 
 int search(int* arr, int size, int factor, int key, int* foundIndexes)
@@ -37,7 +39,15 @@ int search(int* arr, int size, int factor, int key, int* foundIndexes)
 	int max;
 	int procsToSpawnPerChildPrev[X_PROCS];
 	memset(procsToSpawnPerChildPrev, 0, X_PROCS * sizeof(int));
-	int result = recursiveSearch(arr, size, factor, key, foundIndexes, &max, factor - 1, 1, 0, 0, procsToSpawnPerChildPrev, getpid());
+
+	int pipefd[2];
+	if (pipe(pipefd) == -1)
+	{
+		printf("Error: could not create pipe.\n");
+		exit(1);
+	}
+	int result = recursiveSearch(arr, size, factor, key, foundIndexes, &max, factor - 1,
+								 1, 0, 0, procsToSpawnPerChildPrev, getpid(), pipefd);
 
 	return result;
 }
@@ -45,13 +55,8 @@ int search(int* arr, int size, int factor, int key, int* foundIndexes)
 
 int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 					int* foundMax, int procsToSpawn, int procsSpawned, int procSiblings,
-					int siblingNum, int* procsToSpawnPerChildPrev , pid_t parentOfAll)
+					int siblingNum, int* procsToSpawnPerChildPrev , pid_t parentOfAll, int* parentPipefd)
 {
-	// if (getpid() == parentOfAll)
-	// {
-	// 	printf("ENTERING RECURSION AS GRANDMASTER PARENT\n");
-	// }
-	//printf("PARENTOFALL: %d\n", parentOfAll);
 	int foundCount = 0, max = arr[0];
 	int searchResult;
 	int subArrayLower, subArrayUpper;
@@ -86,7 +91,10 @@ int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 		printf("Error: could not create pipe.\n");
 		exit(1);
 	}
+	// printf("NEW PIPE WITH FD %d %d\n", pipefd[0], pipefd[1]);
+	// printf("PARENT PIPE WITH FD %d %d\n", parentPipefd[0], parentPipefd[1]);
 
+	int originalProcsSpawned = procsSpawned;
 	//printf("I am process %d, my parent is %d\n", getpid(), getppid());
 	printf("I am process %d, my parent is %d, ID %d\n", getpid(), getppid(), procsSpawned); 
 
@@ -130,32 +138,17 @@ int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 
 			// Recurse - child becomes a parent.
 			recursiveSearch(arr, size, factor, key, foundIndexes, foundMax, procsToSpawnPerChildNext[i],
-							procsSpawned, procsSpawnedByThisParent - 1, i, procsToSpawnPerChildNext, parentOfAll);
+							procsSpawned, procsSpawnedByThisParent - 1, i, procsToSpawnPerChildNext, parentOfAll, pipefd);
 
 			// This child will spawn all its necessary children and operate as a parent in its recursive call.
 			// At this point, it should terminate.
 			exit(0);
-
-			// See if this will be the last process.
-			// if (i == factor)
-			// {
-			// 	// Pipe the starting data to the parent.
-			// 	// First send max.
-			// 	write(pipefd[1], &max, sizeof(int));
-			// 	// Next send number of found indexes (should be 0).
-			// 	write(pipefd[1], &foundCount, sizeof(int));
-			// 	// Now, pipe each found index (should be none).
-			// 	for (j = 0; j < foundCount; j++)
-			// 	{
-			// 		write(pipefd[1], &(foundIndexes[j]), sizeof(int));
-			// 	}
-			// }
 		}
 		// If this process is the parent of the current fork:
 		else if (pidResult > 0)
 		{
 			forkedProcs[forkedProcCount++] = pidResult;
-			//procsSpawned++;
+
 			// Continue to keep forking.
 			continue;
 
@@ -194,14 +187,13 @@ int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 			// 	}
 			// }
 
-			//break;
 		}
 	}
 
 	// Determine the start and end of the subarray to be searched.
-	subArrayLower = (procsSpawned - 1) * PROC_LIST_SIZE;
-	subArrayUpper = (procsSpawned) * PROC_LIST_SIZE - 1;
-	//printf("Process %d, spawn %zu, spawned %d procs, searching array from %d to %d.\n", getpid(), i, procsSpawned, subArrayLower, subArrayUpper);
+	subArrayLower = (originalProcsSpawned - 1) * PROC_LIST_SIZE;
+	subArrayUpper = (originalProcsSpawned) * PROC_LIST_SIZE - 1;
+	//printf("Process %d, ID %d, searching array from %d to %d.\n", getpid(), i, originalProcsSpawned, subArrayLower, subArrayUpper);
 	
 	// Do the parent's search.
 	searchResult = atomicSearch(arr, subArrayLower, subArrayUpper, key, atomicFoundIndexes, atomicFoundMax);
@@ -217,7 +209,65 @@ int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 	{
 		waitpid(forkedProcs[j], NULL, 0);
 	}
+
+	// if (originalProcsSpawned < 12)
+	// {
+	// 	printf("DONE WAITING ID %d\n", originalProcsSpawned);
+	// }
+
+	// Read the data from each child's search (if any), and compare it to this process's search.
+	for (i = 0; i < forkedProcCount; i++)
+	{
+		//printf("READING, ID %d\n", originalProcsSpawned);
+		// Read the data.
+		pipeArgs readPipeArgs;
+		read(pipefd[0], &readPipeArgs, sizeof(pipeArgs));
+		//printf("DONE READING, ID %d\n", originalProcsSpawned);
+
+		int readFoundMax, readFoundCount;
+		int readFoundIndexes[3];
+		// First read max.
+		readFoundMax = readPipeArgs.foundMax;
+		// Next read number of found indexes.
+		readFoundCount = readPipeArgs.foundCount;
+		// Now, read each found index.
+		readFoundIndexes[0] = readPipeArgs.foundIndex1;
+		readFoundIndexes[1] = readPipeArgs.foundIndex2;
+		readFoundIndexes[2] = readPipeArgs.foundIndex3;
+		for (j = 0; j < readFoundCount; j++)
+		{
+			foundIndexes[foundCount++] = readFoundIndexes[j];
+		}
+
+		// Compare.
+		if (*atomicFoundMax >= readFoundMax)
+		{
+			max = *atomicFoundMax;
+		}
+	}
 	
+	// if (originalProcsSpawned < 12)
+	// {
+	// 	printf("PID %d, PARENT OF ALL %d\n", getpid(), parentOfAll);
+	// }
+
+	// If this process is NOT the starting process, pipe to the parent.
+	if (!(getpid() == parentOfAll))
+	{
+		//printf("WRITING, ID %d\n", originalProcsSpawned);
+		// Pipe the data from this search to the parent of this process.
+		pipeArgs writePipeArgs;
+		// First send max.
+		writePipeArgs.foundMax = max;
+		// Next send number of found indexes.
+		writePipeArgs.foundCount = foundCount;
+		// Now, pipe each found index.
+		writePipeArgs.foundIndex1 = foundIndexes[0];
+		writePipeArgs.foundIndex2 = foundIndexes[1];
+		writePipeArgs.foundIndex3 = foundIndexes[2];
+		write(parentPipefd[1], &writePipeArgs, sizeof(pipeArgs));
+		//printf("DONE WRITING, ID %d\n", originalProcsSpawned);
+	}
 
 	free(atomicFoundIndexes);
 	free(atomicFoundMax);
@@ -226,6 +276,7 @@ int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 	if (getpid() == parentOfAll)
 	{
 		printf("Max = %d\n", max);
+		*foundMax = max;
 		//printf("PID %d, PARENTOFALL %d\n", getpid(), parentOfAll);
 
 		// Return -1 if not all 3 keys were found.
