@@ -95,8 +95,8 @@ int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 	// printf("PARENT PIPE WITH FD %d %d\n", parentPipefd[0], parentPipefd[1]);
 
 	int originalProcsSpawned = procsSpawned;
-	//printf("I am process %d, my parent is %d\n", getpid(), getppid());
-	printf("I am process %d, my parent is %d, ID %d\n", getpid(), getppid(), procsSpawned); 
+	printf("I am process %d, my parent is %d\n", getpid(), getppid());
+	//printf("I am process %d, my parent is %d, ID %d\n", getpid(), getppid(), procsSpawned); 
 
 	for (j = 0; j < procSiblings + 1; j++)
 	{
@@ -151,42 +151,6 @@ int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 
 			// Continue to keep forking.
 			continue;
-
-
-			// Read the data from the child's search, and compare it to this process's search.
-			// int readFoundMax, readFoundCount, readFoundIndex;
-			// // First read max.
-			// read(pipefd[0], &readFoundMax, sizeof(int));
-			// // Next read number of found indexes.
-			// read(pipefd[0], &readFoundCount, sizeof(int));
-			// // Now, read each found index.
-			// for (j = 0; j < readFoundCount; j++)
-			// {
-			// 	read(pipefd[0], &readFoundIndex, sizeof(int));
-			// 	foundIndexes[foundCount++] = readFoundIndex;
-			// }
-
-			// // Compare.
-			// if (*atomicFoundMax >= readFoundMax)
-			// {
-			// 	max = *atomicFoundMax;
-			// }
-
-			// If this process is NOT the starting process, pipe.
-			// if (!(getpid() == parentOfAll))
-			// {
-			// 	// Pipe the data from this search to the parent of this process.
-			// 	// First send max.
-			// 	write(pipefd[1], &max, sizeof(int));
-			// 	// Next send number of found indexes.
-			// 	write(pipefd[1], &foundCount, sizeof(int));
-			// 	// Now, pipe each found index.
-			// 	for (j = 0; j < foundCount; j++)
-			// 	{
-			// 		write(pipefd[1], &(foundIndexes[j]), sizeof(int));
-			// 	}
-			// }
-
 		}
 	}
 
@@ -209,11 +173,6 @@ int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 	{
 		waitpid(forkedProcs[j], NULL, 0);
 	}
-
-	// if (originalProcsSpawned < 12)
-	// {
-	// 	printf("DONE WAITING ID %d\n", originalProcsSpawned);
-	// }
 
 	// Read the data from each child's search (if any), and compare it to this process's search.
 	for (i = 0; i < forkedProcCount; i++)
@@ -245,11 +204,6 @@ int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 			max = *atomicFoundMax;
 		}
 	}
-	
-	// if (originalProcsSpawned < 12)
-	// {
-	// 	printf("PID %d, PARENT OF ALL %d\n", getpid(), parentOfAll);
-	// }
 
 	// If this process is NOT the starting process, pipe to the parent.
 	if (!(getpid() == parentOfAll))

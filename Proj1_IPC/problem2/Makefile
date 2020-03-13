@@ -10,6 +10,9 @@ q2:
 q3:
 	gcc search_3.c -std=c99 -D_BSD_SOURCE -o search
 
+qvar:
+	gcc search_variation.c -std=c99 -D_BSD_SOURCE -o search
+
 generate:
 	gcc generate.c -std=c99 -o generate
 
