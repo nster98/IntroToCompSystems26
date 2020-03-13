@@ -17,3 +17,7 @@ PROBLEM 3
 1M			Search took  863.599 ms.
 
 VARIATION
+1k			Search took    0.069 ms.
+10k			Search took   2.034 ms.
+100k		Search took   16.234 ms.
+1M			Search took  149.950 ms.

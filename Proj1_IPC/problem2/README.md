@@ -6,6 +6,9 @@ To generate a list of n numbers to a file "arrayNums.txt":
 
 To run any question, please follow the instructions below.
 
+To send the output to an output text file, please add ```> output.txt``` to the command that runs the program.
+This will redirect the standard output from the program into a text file of the given name.
+
 
 ### Part 1:
 After generating a list of size n, to run the single-process search: 
