@@ -12,88 +12,265 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <time.h>
+#include <string.h>
 
-int* search(int* arr, int size, int factor, int key, int foundIndex[]);
-
+int search(int* arr, int size, int factor, int key, int* foundIndexes);
+int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
+					int* foundMax, int procsToSpawn, int procLayer, int procSiblings,
+					int siblingNum, int* procsToSpawnPerChildPrev, pid_t parentOfAll);
+int atomicSearch(int* arr, int startIndex, int stopIndex, int key, int* foundIndexes, int* foundMax);
 
 #define KEY -50
 #define ULIMIT 31830
+#define PROC_LIST_SIZE 250
+#define X_PROCS 4
 
-int* search(int* arr, int size, int factor, int key, int foundIndex[])
-{	
-	int amount = size / factor;
-	int status;
-	int sectionOfChild[factor];
-	pid_t pid[factor];
+typedef struct {
+	pid_t pid;
+	int foundMax;
+	int foundCount;
+	int foundIndexes[3];
+} pipeArgs;
 
-	unsigned char exit_code;
+int search(int* arr, int size, int factor, int key, int* foundIndexes)
+{
+	int max;
+	int procsToSpawnPerChildPrev[X_PROCS];
+	memset(procsToSpawnPerChildPrev, 0, X_PROCS * sizeof(int));
+	int result = recursiveSearch(arr, size, factor, key, foundIndexes, &max, factor - 1, 1, 0, 0, procsToSpawnPerChildPrev, getpid());
 
-	int foundIndexI = 0;
-		
-	int num;
-	// Create a number of forks equal to size
-	for (int i = 0; i < size; i += amount)
+	return result;
+}
+
+
+int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
+					int* foundMax, int procsToSpawn, int procsSpawned, int procSiblings,
+					int siblingNum, int* procsToSpawnPerChildPrev , pid_t parentOfAll)
+{
+	// if (getpid() == parentOfAll)
+	// {
+	// 	printf("ENTERING RECURSION AS GRANDMASTER PARENT\n");
+	// }
+	//printf("PARENTOFALL: %d\n", parentOfAll);
+	int foundCount = 0, max = arr[0];
+	int searchResult;
+	int subArrayLower, subArrayUpper;
+	int* atomicFoundIndexes = (int*) malloc(3 * sizeof(int));
+	int* atomicFoundMax = (int *) malloc(sizeof(int));
+	size_t i, j;
+	pid_t pidResult;
+	pid_t forkedProcs[X_PROCS];
+	int forkedProcCount = 0;
+	int procsToSpawnPerChildNext[X_PROCS];
+
+	int procsSpawnedByThisParent = (procsToSpawn > X_PROCS) ? X_PROCS : procsToSpawn;  // Next Siblings + 1
+	int procDifference = procsToSpawn - procsSpawnedByThisParent;  // Total - Next Siblings + 1
+	
+	// Split the remaining procs to spawn evenly between all children.
+	for (j = 0; j < X_PROCS; j++)
 	{
-		pid[i / amount] = fork();
-		num = i;
-
-		if (pid[num / amount] < 0) // Error
+		procsToSpawnPerChildNext[j] = (procDifference / X_PROCS == 0) ? 0 : procDifference / X_PROCS;  // Subtract one to account for forked process.
+	}
+	int remainingProcs = procDifference % X_PROCS;
+	while (remainingProcs > 0)
+	{
+		for (j = 0; j < X_PROCS && remainingProcs > 0; j++, remainingProcs--)
 		{
-			fprintf(stderr, "Failed to fork\n");
-			exit(-1);
-		}
-
-		if (pid[num / amount] == 0) // Child
-		{
-			printf("I am process %d, my parent is %d\n", getpid(), getppid());
-			
-			int foundFlag = 0;
-
-			int end = (num + amount < size) ? num + amount : size;
-
-			for (int j = num; j < end; j++)
-			{
-				if (arr[j] == key)
-				{
-					foundFlag = 1;
-					//foundIndex[foundIndexI++] = j;
-					exit(j % amount);
-				}
-			}
-			if (foundFlag == 0)
-			{
-				exit(-1);
-			}
-		}
-		else // Parent
-		{
-			
+			procsToSpawnPerChildNext[j]++;
 		}
 	}
 
-	int k;
-	for (k = 0; k < amount; k++)
+	int pipefd[2];
+	if (pipe(pipefd) == -1)
 	{
-		waitpid(pid[k], &status, 0);
-		sectionOfChild[k] = k * amount;
+		printf("Error: could not create pipe.\n");
+		exit(1);
+	}
 
-		if (WIFEXITED(status))
+	//printf("I am process %d, my parent is %d\n", getpid(), getppid());
+	printf("I am process %d, my parent is %d, ID %d\n", getpid(), getppid(), procsSpawned); 
+
+	for (j = 0; j < procSiblings + 1; j++)
+	{
+		//printf("i: %zu, j: %zu\n", i, j);
+		if (j < siblingNum)
 		{
-			exit_code = WEXITSTATUS(status);
+			procsSpawned += procsToSpawnPerChildPrev[j];
+		}
+		else
+		{
+			break;
+		}
+	}
+	procsSpawned += procSiblings - siblingNum;
+	//printf("%d %d %d\n", siblingNum, procSiblings, procsSpawned);
 
-			if (exit_code != 255)
-			{
-				break;
-			}
+	//printf("Procs to Spawn: %d\n", procsToSpawn);
+
+	// Spawn at most <X_PROCS> number of parent processes.
+	for (i = 0; procsToSpawn > 0 && i < X_PROCS; i++)
+	{
+		// Spawn a child process.
+		pidResult = fork();
+		procsToSpawn--;
+		procsSpawned++;
+
+		//procsSpawned += (procSiblings - i + 1);
+
+		// On error, return.
+		if (pidResult < 0)
+		{
+			printf("Error: could not fork a new process.\n");
+			exit(1);
+		}
+		// If this process is the child process of the current fork:
+		else if (pidResult == 0)
+		{
+			//printf("I am process %d, my parent is %d\n", getpid(), getppid());
+
+			// Recurse - child becomes a parent.
+			recursiveSearch(arr, size, factor, key, foundIndexes, foundMax, procsToSpawnPerChildNext[i],
+							procsSpawned, procsSpawnedByThisParent - 1, i, procsToSpawnPerChildNext, parentOfAll);
+
+			// This child will spawn all its necessary children and operate as a parent in its recursive call.
+			// At this point, it should terminate.
+			exit(0);
+
+			// See if this will be the last process.
+			// if (i == factor)
+			// {
+			// 	// Pipe the starting data to the parent.
+			// 	// First send max.
+			// 	write(pipefd[1], &max, sizeof(int));
+			// 	// Next send number of found indexes (should be 0).
+			// 	write(pipefd[1], &foundCount, sizeof(int));
+			// 	// Now, pipe each found index (should be none).
+			// 	for (j = 0; j < foundCount; j++)
+			// 	{
+			// 		write(pipefd[1], &(foundIndexes[j]), sizeof(int));
+			// 	}
+			// }
+		}
+		// If this process is the parent of the current fork:
+		else if (pidResult > 0)
+		{
+			forkedProcs[forkedProcCount++] = pidResult;
+			//procsSpawned++;
+			// Continue to keep forking.
+			continue;
+
+
+			// Read the data from the child's search, and compare it to this process's search.
+			// int readFoundMax, readFoundCount, readFoundIndex;
+			// // First read max.
+			// read(pipefd[0], &readFoundMax, sizeof(int));
+			// // Next read number of found indexes.
+			// read(pipefd[0], &readFoundCount, sizeof(int));
+			// // Now, read each found index.
+			// for (j = 0; j < readFoundCount; j++)
+			// {
+			// 	read(pipefd[0], &readFoundIndex, sizeof(int));
+			// 	foundIndexes[foundCount++] = readFoundIndex;
+			// }
+
+			// // Compare.
+			// if (*atomicFoundMax >= readFoundMax)
+			// {
+			// 	max = *atomicFoundMax;
+			// }
+
+			// If this process is NOT the starting process, pipe.
+			// if (!(getpid() == parentOfAll))
+			// {
+			// 	// Pipe the data from this search to the parent of this process.
+			// 	// First send max.
+			// 	write(pipefd[1], &max, sizeof(int));
+			// 	// Next send number of found indexes.
+			// 	write(pipefd[1], &foundCount, sizeof(int));
+			// 	// Now, pipe each found index.
+			// 	for (j = 0; j < foundCount; j++)
+			// 	{
+			// 		write(pipefd[1], &(foundIndexes[j]), sizeof(int));
+			// 	}
+			// }
+
+			//break;
 		}
 	}
 
-	if (exit_code < 255)
-	{
-		printf("I am process %d and I found the key at %d\n", pid[k], exit_code + sectionOfChild[k]);	
-	}	
+	// Determine the start and end of the subarray to be searched.
+	subArrayLower = (procsSpawned - 1) * PROC_LIST_SIZE;
+	subArrayUpper = (procsSpawned) * PROC_LIST_SIZE - 1;
+	//printf("Process %d, spawn %zu, spawned %d procs, searching array from %d to %d.\n", getpid(), i, procsSpawned, subArrayLower, subArrayUpper);
+	
+	// Do the parent's search.
+	searchResult = atomicSearch(arr, subArrayLower, subArrayUpper, key, atomicFoundIndexes, atomicFoundMax);
 
-	return foundIndex;
+	for (j = 0; j < searchResult; j++)
+	{
+		foundIndexes[j] = atomicFoundIndexes[j];
+		foundCount++;
+	}
+
+	// Wait for the children.
+	for (j = 0; j < forkedProcCount; j++)
+	{
+		waitpid(forkedProcs[j], NULL, 0);
+	}
+	
+
+	free(atomicFoundIndexes);
+	free(atomicFoundMax);
+
+	// If this process is the starting process, return.
+	if (getpid() == parentOfAll)
+	{
+		printf("Max = %d\n", max);
+		//printf("PID %d, PARENTOFALL %d\n", getpid(), parentOfAll);
+
+		// Return -1 if not all 3 keys were found.
+		int retVal = (foundCount == 3) ? 0 : -1;
+		return retVal;
+	}
+	// If this process is any other process, simply exit.
+	else
+	{
+		exit(0);
+	}
+}
+
+
+int atomicSearch(int* arr, int startIndex, int stopIndex, int key, int* foundIndexes, int* foundMax)
+{
+	int foundCount = 0;
+	int max = arr[startIndex];
+	size_t i;
+
+	for (i = startIndex; i < stopIndex; i++)
+	{
+		// Max check.
+		if (arr[i] > max)
+		{
+			max = arr[i];
+		}
+		// Key check.
+		if (arr[i] == key)
+		{
+			foundIndexes[foundCount++] = i;
+			printf("I am process %d and I found the key at %d\n", getpid(), foundIndexes[foundCount - 1]);
+		}
+		// All found check.
+		if (foundCount == 3)
+		{
+			break;
+		}
+	}
+
+	// Save the maximum.
+	*foundMax = max;
+
+	// Return number of keys found.
+	return foundCount;
 }
 
 
@@ -124,8 +301,8 @@ int main(int argc, char* argv[])
 	arr[LIST_SIZE / 2] = key;
 	arr[(3 * LIST_SIZE) / 4] = key;
 
-	// TODO: calculate the factor here.
-	int factor = 4; // Amount of processes to make
+	// Calculate the amount of processes to make here.
+	int factor = (LIST_SIZE % PROC_LIST_SIZE == 0) ? LIST_SIZE / PROC_LIST_SIZE : LIST_SIZE / PROC_LIST_SIZE + 1;
 	int ulimit = ULIMIT; // ulimit set by DSV 
 
 	if (factor > ulimit)
@@ -139,12 +316,12 @@ int main(int argc, char* argv[])
 	struct timeval start, end, diff;
     gettimeofday(&start, NULL);
 
-	int* foundIndex = (int*) malloc(sizeof(int) * 3);
-	foundIndex = search(arr, LIST_SIZE, factor, key, foundIndex);
+	int* foundIndexes = (int*) malloc(sizeof(int) * 3);
+	search(arr, LIST_SIZE, factor, key, foundIndexes);
 
 	for (i = 0; i < 3; i++)
 	{
-		printf("Key found at index: %d\n", foundIndex[i]); // DOESNT WORK
+		printf("Key found at index: %d\n", foundIndexes[i]);
 	}
 
 	// Stop timing here.
@@ -152,9 +329,4 @@ int main(int argc, char* argv[])
     timersub(&end,   &start, &diff);
 
 	printf("Search took %'8.3f ms.\n", diff.tv_sec*1000.0 + diff.tv_usec/1000.0);
-
-	// THOUGHTS
-	//
-	// There needs to be something like an array for the process to put its found index for the key into
-	// They should also have a maximum that is sent to each process whenever one of them finds something larger
 }
