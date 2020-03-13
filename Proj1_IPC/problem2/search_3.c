@@ -23,7 +23,7 @@ int atomicSearch(int* arr, int size, int startIndex, int stopIndex, int key, int
 #define KEY -50
 #define ULIMIT 31830
 #define PROC_LIST_SIZE 250
-#define X_PROCS 20
+#define X_PROCS 10
 
 typedef struct {
 	pid_t pid;
