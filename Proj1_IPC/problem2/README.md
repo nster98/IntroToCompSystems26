@@ -24,6 +24,9 @@ After generating a list of size n, to run the multi-process BFS search:
 ```make q3
 ./search n```
 
+Note: the value of X can be specified in the Definition at the top of the search_3.c file:
+X_PROCS, by default set to 10.
+
 
 ### Variation on the Problem:
 After generating a list of size n, to run the variation on the problem: 
