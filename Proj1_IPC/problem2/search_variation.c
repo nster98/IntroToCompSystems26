@@ -18,7 +18,7 @@ int search(int* arr, int size, int factor, int key, int* foundIndexes);
 int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 					int procsToSpawn, int procLayer, int procSiblings,
 					int siblingNum, pid_t parentOfAll);
-int atomicSearch(int* arr, int startIndex, int stopIndex, int key, int* foundIndexes);
+int atomicSearch(int* arr, int size, int startIndex, int stopIndex, int key, int* foundIndexes);
 
 #define KEY -50
 #define ULIMIT 31830
@@ -93,7 +93,7 @@ int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 			subArrayLower = (procsSpawned - 1) * PROC_LIST_SIZE;
 			subArrayUpper = (procsSpawned) * PROC_LIST_SIZE - 1;
 
-			searchResult = atomicSearch(arr, subArrayLower, subArrayUpper, key, atomicFoundIndexes);
+			searchResult = atomicSearch(arr, size, subArrayLower, subArrayUpper, key, atomicFoundIndexes);
 
 			for (j = 0; j < searchResult; j++)
 			{
@@ -130,7 +130,7 @@ int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 	subArrayUpper = (1) * PROC_LIST_SIZE - 1;
 	
 	// Do the parent's search.
-	searchResult = atomicSearch(arr, subArrayLower, subArrayUpper, key, atomicFoundIndexes);
+	searchResult = atomicSearch(arr, size, subArrayLower, subArrayUpper, key, atomicFoundIndexes);
 
 	for (j = 0; j < searchResult; j++)
 	{
@@ -185,12 +185,12 @@ int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 }
 
 
-int atomicSearch(int* arr, int startIndex, int stopIndex, int key, int* foundIndexes)
+int atomicSearch(int* arr, int size, int startIndex, int stopIndex, int key, int* foundIndexes)
 {
 	int foundCount = 0;
 	size_t i;
 
-	for (i = startIndex; i < stopIndex; i++)
+	for (i = startIndex; i < size && i < stopIndex; i++)
 	{
 		// Key check.
 		if (arr[i] == key)

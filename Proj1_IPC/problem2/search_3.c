@@ -18,12 +18,12 @@ int search(int* arr, int size, int factor, int key, int* foundIndexes);
 int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 					int* foundMax, int procsToSpawn, int procLayer, int procSiblings,
 					int siblingNum, int* procsToSpawnPerChildPrev, pid_t parentOfAll, int* parentPipefd);
-int atomicSearch(int* arr, int startIndex, int stopIndex, int key, int* foundIndexes, int* foundMax);
+int atomicSearch(int* arr, int size, int startIndex, int stopIndex, int key, int* foundIndexes, int* foundMax);
 
 #define KEY -50
 #define ULIMIT 31830
 #define PROC_LIST_SIZE 250
-#define X_PROCS 10
+#define X_PROCS 20
 
 typedef struct {
 	pid_t pid;
@@ -160,7 +160,7 @@ int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 	//printf("Process %d, ID %d, searching array from %d to %d.\n", getpid(), i, originalProcsSpawned, subArrayLower, subArrayUpper);
 	
 	// Do the parent's search.
-	searchResult = atomicSearch(arr, subArrayLower, subArrayUpper, key, atomicFoundIndexes, atomicFoundMax);
+	searchResult = atomicSearch(arr, size, subArrayLower, subArrayUpper, key, atomicFoundIndexes, atomicFoundMax);
 
 	for (j = 0; j < searchResult; j++)
 	{
@@ -245,13 +245,13 @@ int recursiveSearch(int* arr, int size, int factor, int key, int* foundIndexes,
 }
 
 
-int atomicSearch(int* arr, int startIndex, int stopIndex, int key, int* foundIndexes, int* foundMax)
+int atomicSearch(int* arr, int size, int startIndex, int stopIndex, int key, int* foundIndexes, int* foundMax)
 {
 	int foundCount = 0;
 	int max = arr[startIndex];
 	size_t i;
 
-	for (i = startIndex; i < stopIndex; i++)
+	for (i = startIndex; i < size && i < stopIndex; i++)
 	{
 		// Max check.
 		if (arr[i] > max)

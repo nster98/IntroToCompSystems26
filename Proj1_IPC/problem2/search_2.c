@@ -14,7 +14,7 @@
 #include <time.h>
 
 int search(int* arr, int size, int factor, int key, int* foundIndexes);
-int atomicSearch(int* arr, int startIndex, int stopIndex, int key, int* foundIndexes, int* foundMax);
+int atomicSearch(int* arr, int size, int startIndex, int stopIndex, int key, int* foundIndexes, int* foundMax);
 
 #define KEY -50
 #define ULIMIT 31830
@@ -84,7 +84,7 @@ int search(int* arr, int size, int factor, int key, int* foundIndexes)
 		else if (pidResult > 0)
 		{
 			// Just search, then break.
-			searchResult = atomicSearch(arr, subArrayLower, subArrayUpper, key, atomicFoundIndexes, atomicFoundMax);
+			searchResult = atomicSearch(arr, size, subArrayLower, subArrayUpper, key, atomicFoundIndexes, atomicFoundMax);
 
 			for (j = 0; j < searchResult; j++)
 			{
@@ -114,21 +114,6 @@ int search(int* arr, int size, int factor, int key, int* foundIndexes)
 			{
 				max = *atomicFoundMax;
 			}
-
-			// printf("PID: %d\n", getpid());
-			// printf("ParentOfAll: %d\n", parentOfAll);
-			// if (getpid() == parentOfAll)
-			// {
-			// 	printf("Atomic Found Max: %d\n", *atomicFoundMax);
-			// 	printf("Read Found Max: %d\n", readFoundMax);
-			// 	printf("Max set to: %d\n", max);
-			//  	printf("Found Indexes: %d\n", foundCount);
-			// 	for (j = 0; j < foundCount; j++)
-			// 	{
-			// 		printf("INDEX %zu: %d\n", j, foundIndexes[j]);
-			// 	}
-			// }
-			// printf("Found Indexes: %d\n", foundCount);
 
 			// If this process is NOT the starting process, pipe.
 			if (!(getpid() == parentOfAll))
@@ -170,13 +155,13 @@ int search(int* arr, int size, int factor, int key, int* foundIndexes)
 }
 
 
-int atomicSearch(int* arr, int startIndex, int stopIndex, int key, int* foundIndexes, int* foundMax)
+int atomicSearch(int* arr, int size, int startIndex, int stopIndex, int key, int* foundIndexes, int* foundMax)
 {
 	int foundCount = 0;
 	int max = arr[startIndex];
 	size_t i;
 
-	for (i = startIndex; i < stopIndex; i++)
+	for (i = startIndex; i < size && i < stopIndex; i++)
 	{
 		// Max check.
 		if (arr[i] > max)
