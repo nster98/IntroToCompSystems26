@@ -65,6 +65,14 @@ void *thread1(void* arg)
 {
 	mask_sig1();
 	printf("Thread1\n");
+	sleep(30);
+
+	unsigned long int sum = 0;
+	for (int i = 0; i < 1000*(unsigned long int)arg; i++)
+	{
+		sum += i;
+	}
+	printf("Thread 1 sum: %lu\n", sum);
 }
 
 // Thread 2 will handle SIGSTOP
@@ -72,6 +80,14 @@ void *thread2(void* arg)
 {
 	mask_sig2();
 	printf("Thread2\n");
+
+	sleep(30);
+	unsigned long int sum = 0;
+	for (int i = 0; i < 1000*(unsigned long int)arg; i++)
+	{
+		sum += i;
+	}
+	printf("Thread 2 sum: %lu\n", sum);
 }
 
 // Thread 3 will handle SIGILL
@@ -79,22 +95,65 @@ void *thread3(void* arg)
 {
 	mask_sig3();
 	printf("Thread3\n");
+
+	sleep(30);
+	unsigned long int sum = 0;
+	for (int i = 0; i < 1000*(unsigned long int)arg; i++)
+	{
+		sum += i;
+	}
+	printf("Thread 3 sum: %lu\n", sum);
+}
+void handler(int signum)
+{
+	if (signum == SIGINT) printf("Recieved SIGINT\n");
+	if (signum == SIGSTOP) printf("Recieved SIGSTOP\n");
+	if (signum == SIGILL) printf("Recieved SIGILL\n");
 }
 
 void setup_sig_handler(void)
 {
-	//struct sigaction action;
+	struct sigaction action;
+
+	action.sa_flags = SA_SIGINFO;
+	action.sa_handler = handler;
+
+	if (sigaction(SIGINT, &action, NULL) == -1)
+	{
+		perror("SIGINT\n");
+	}
+	if (sigaction(SIGSTOP, &action, NULL) == -1)
+	{
+		perror("SIGSTOP\n");
+	}
+	if (sigaction(SIGILL, &action, NULL) == -1)
+	{
+		perror("SIGILL\n");
+	}
 }
 
 int main(int argc, char* argv[])
 {
 	pthread_t tid[3];
 
+	//signal(SIGINT, handler);
+	//signal(SIGSTOP, handler);
+	//signal(SIGILL, handler);
+
+	setup_sig_handler();
+
 	for (int i = 0; i < 3; i++)	
 	{
-		if (i == 0) pthread_create(&tid[i], NULL, thread1, (void *)&tid);
-		if (i == 1) pthread_create(&tid[i], NULL, thread2, (void *)&tid);
-		if (i == 2) pthread_create(&tid[i], NULL, thread3, (void *)&tid);
+		if (i == 0) pthread_create(&tid[i], NULL, thread1, (void *)&tid[i]);
+		if (i == 1) pthread_create(&tid[i], NULL, thread2, (void *)&tid[i]);
+		if (i == 2) pthread_create(&tid[i], NULL, thread3, (void *)&tid[i]);
+	}
+
+	for (int i = 0; i < 3; i++)
+	{
+		//pthread_kill(tid[i], SIGINT);
+		//pthread_kill(tid[i], SIGSTOP);
+		//pthread_kill(tid[i], SIGILL);
 	}
 
 	for (int i = 0; i < 3; i++)
