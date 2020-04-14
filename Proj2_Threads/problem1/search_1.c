@@ -47,7 +47,11 @@ int search(int *arr, int size, int xThreads, int key, int *foundIndexes)
 	int err;
 
 	// Check for error with calloc.
-	if (threadHandles == NULL || threadInputs == NULL || threadOutputs == NULL) exit(-1);
+	if (threadHandles == NULL || threadInputs == NULL || threadOutputs == NULL)
+	{
+		printf("Error allocating memory. Exiting...\n");
+		exit(-1);
+	}
 
 	// Fill the Thread args.
 	for (i = 0; i < xThreads; i++)
@@ -60,6 +64,15 @@ int search(int *arr, int size, int xThreads, int key, int *foundIndexes)
 									threadInputs[i].startIndex + splitSize :
 									threadInputs[i].startIndex + splitSize + (size % xThreads);  // Give the last thread the remainder of the elements if division of labor was uneven.
 		threadInputs[i].key = key;
+
+		// Allocate output space.
+		threadInputs[i].threadOutputs -> foundIndexes = calloc(3, sizeof(int));
+		// Check for error with calloc.
+		if (threadInputs[i].threadOutputs -> foundIndexes == NULL)
+		{
+			printf("Error allocating memory. Exiting...\n");
+			exit(-1);
+		}
 	}
 
 	// Spin up threads.
@@ -102,7 +115,14 @@ int search(int *arr, int size, int xThreads, int key, int *foundIndexes)
 	// Free the End!
 	free(threadHandles);
     free(threadInputs);
+
+	for (i = 0; i < xThreads; i++)
+	{
+		free(threadOutputs[i].foundIndexes);
+	}
 	free(threadOutputs);
+
+	printf("No errors so far.\n");
 
 	// Return -1 if not all 3 keys were found.
 	int retval = (foundCount == 3) ? 0 : -1;
