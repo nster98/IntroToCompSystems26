@@ -37,9 +37,76 @@ typedef struct {
 
 int search(int *arr, int size, int xThreads, int key, int *foundIndexes)
 {
+	pthread_t *threadHandles = calloc(xThreads, sizeof (pthread_t));  // Array of thread handles for each thread.
+    ThreadInputs *threadInputs = calloc(xThreads, sizeof (ThreadInputs));  // Array of thread arguments for each thread.
+	ThreadOutputs *threadOutputs = calloc(xThreads, sizeof (ThreadOutputs));  // Array of thread outputs for each thread.
+	int splitSize = size / xThreads;  // Number of elements for each thread to search, not counting leftover.
+	int foundCount = 0;
+	int max = arr[0];
+	size_t i, j;
+	int err;
 
+	// Check for error with calloc.
+	if (threadHandles == NULL || threadInputs == NULL || threadOutputs == NULL) exit(-1);
 
-	return 1;
+	// Fill the Thread args.
+	for (i = 0; i < xThreads; i++)
+	{
+		threadInputs[i].threadOutputs = &(threadOutputs[i]);
+		threadInputs[i].arr = arr;
+		threadInputs[i].size = size;
+		threadInputs[i].startIndex = splitSize * i;
+		threadInputs[i].stopIndex = (i < xThreads - 1) ?
+									threadInputs[i].startIndex + splitSize :
+									threadInputs[i].startIndex + splitSize + (size % xThreads);  // Give the last thread the remainder of the elements if division of labor was uneven.
+		threadInputs[i].key = key;
+	}
+
+	// Spin up threads.
+	for (i = 0; i < xThreads; i++)
+	{
+		err = pthread_create(&threadHandles[i], NULL, (void * (*)(void *)) atomicSearch, (void *) &threadInputs[i]);
+		if (err)
+		{
+			printf("Error creating thread #%zu.\n", i);
+			//exit(-1);
+		}
+	}
+
+	// Join threads in order and collect the results.
+	for (i = 0; i < xThreads; i++)
+	{
+		ThreadOutputs *currentOutput;
+		err = pthread_join(threadHandles[i], (void **) &currentOutput);
+		if (err)
+		{
+			printf("Error joining thread #%zu.\n", i);
+			//exit(-1);
+		}
+		else 
+		{
+			for (j = 0; j < currentOutput -> foundCount; j++)
+			{
+				foundIndexes[foundCount++] = currentOutput -> foundIndexes[j];
+			}
+
+			if (currentOutput -> foundMax > max)
+			{
+				max = currentOutput -> foundMax;
+			}
+		}
+	}
+
+	printf("Max = %d\n", max);
+
+	// Free the End!
+	free(threadHandles);
+    free(threadInputs);
+	free(threadOutputs);
+
+	// Return -1 if not all 3 keys were found.
+	int retval = (foundCount == 3) ? 0 : -1;
+	return retval;
 }
 
 
@@ -78,7 +145,9 @@ void* atomicSearch(void *threadArgs)
 	// Save the maximum.
 	threadOutputs -> foundMax = max;
 
-	return threadOutputs;
+	pthread_exit((void *) threadOutputs);
+
+	return NULL;  // To satisfy compiler, because GCC is a stinky poohead.
 }
 
 
@@ -119,7 +188,15 @@ int main(int argc, char* argv[])
     gettimeofday(&start, NULL);
 
 	int* foundIndexes = (int*) malloc(sizeof(int) * 3);
-	search(arr, listSize, xThreads, key, foundIndexes);
+
+	// Check for error with malloc.
+	if (foundIndexes == NULL) exit(-1);
+
+	int result = search(arr, listSize, xThreads, key, foundIndexes);
+	if (result == -1)
+	{
+		printf("Not all 3 keys found.");
+	}
 
 	for (i = 0; i < 3; i++)
 	{
@@ -131,4 +208,6 @@ int main(int argc, char* argv[])
     timersub(&end,   &start, &diff);
 
 	printf("Search took %'8.3f ms.\n", diff.tv_sec*1000.0 + diff.tv_usec/1000.0);
+
+	free(foundIndexes);
 }
