@@ -215,7 +215,7 @@ int main(int argc, char* argv[])
 	int result = search(arr, listSize, xThreads, key, foundIndexes);
 	if (result == -1)
 	{
-		printf("Not all 3 keys found.");
+		printf("Not all 3 keys found.\n");
 	}
 
 	for (i = 0; i < 3; i++)
