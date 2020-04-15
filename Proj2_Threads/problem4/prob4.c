@@ -65,7 +65,7 @@ void *thread1(void* arg)
 {
 	mask_sig1();
 	printf("Thread1\n");
-	sleep(30);
+	//sleep(30);
 
 	unsigned long int sum = 0;
 	for (int i = 0; i < 1000*(unsigned long int)arg; i++)
@@ -81,7 +81,7 @@ void *thread2(void* arg)
 	mask_sig2();
 	printf("Thread2\n");
 
-	sleep(30);
+	//sleep(30);
 	unsigned long int sum = 0;
 	for (int i = 0; i < 1000*(unsigned long int)arg; i++)
 	{
@@ -96,7 +96,7 @@ void *thread3(void* arg)
 	mask_sig3();
 	printf("Thread3\n");
 
-	sleep(30);
+	//sleep(30);
 	unsigned long int sum = 0;
 	for (int i = 0; i < 1000*(unsigned long int)arg; i++)
 	{
