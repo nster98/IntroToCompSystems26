@@ -39,7 +39,7 @@ Since the signal is being reinstalled, the process can continue looking for SIGI
 
 **Output**
 
-```./prob4
+./prob4
 Thread3
 Thread2
 Thread1
@@ -49,7 +49,7 @@ Thread1
 ^CRecieved SIGINT
 Thread 3 sum: 2305843008139952128
 Thread 1 sum: 2305843008139952128
-Thread 2 sum: 2305843008139952128```
+Thread 2 sum: 2305843008139952128
 
 This output is achieved by sending the SIGINT signal through the command line. If sending SIGILL or SIGSTOP using ```kill -19 <process ID>``` or ```kill -23 <process ID>``` in a different window, the
 process terminates, even though the threads are set up correctly to handle the signal.
