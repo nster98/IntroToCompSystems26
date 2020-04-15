@@ -122,7 +122,7 @@ int search(int *arr, int size, int xThreads, int key, int *foundIndexes)
 	}
 	free(threadOutputs);
 
-	printf("No errors so far.\n");
+	//printf("No errors so far.\n");
 
 	// Return -1 if not all 3 keys were found.
 	int retval = (foundCount == 3) ? 0 : -1;
