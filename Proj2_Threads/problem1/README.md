@@ -1,4 +1,4 @@
-## Problem 2
+## Problem 1
 
 To generate a list of n numbers to a file "arrayNums.txt":
 
@@ -17,35 +17,27 @@ This will redirect the standard output from the program into a text file of the 
 
 
 ### Part 1:
-After generating a list of size n, to run the single-process search: 
+After generating a list of size n, to run the search with X threads: 
 
 ```make q1```
 
-```./search n```
+```./search n X```
 
 
 ### Part 2:
-After generating a list of size n, to run the multi-process DFS search: 
+After generating a list of size n, to run the recursive divide-and-conquer search: 
 
 ```make q2```
 
 ```./search n```
 
-
-### Part 3:
-After generating a list of size n, to run the multi-process BFS search: 
-
-```make q3```
-
-```./search n```
-
-Note: the value of X can be specified in the Definition at the top of the search_3.c file:
-X_PROCS, by default set to 10.
+Note: the value of the minimum size of the list before searching will begin can be specified in the Definition at the top of the search_2.c file:
+MIN_LIST_SIZE, by default set to 1000.
 
 
 ### Variation on the Problem:
-After generating a list of size n, to run the variation on the problem: 
+After generating a list of size n, to run the variation on the problem with (at most) X threads: 
 
 ```make qvar```
 
-```./search n```
+```./search n X```

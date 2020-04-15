@@ -100,6 +100,8 @@ void *recursiveSearch(void *threadArgs)
 	int elementsToSearch = threadInputs -> elementsToSearch;
 	size_t i, j;
 
+	printf("I am pthread %d, searching from %d to %d.\n", (int) pthread_self(), startIndex, stopIndex);
+
 	// If we have a small enough list, do not spawn more threads. Just search.
 	if (elementsToSearch <= MIN_LIST_SIZE)
 	{

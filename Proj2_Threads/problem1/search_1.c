@@ -141,6 +141,8 @@ void* atomicSearch(void *threadArgs)
 	int stopIndex = threadInputs -> stopIndex;
 	int key = threadInputs -> key;
 
+	printf("I am pthread %d, searching from %d to %d.\n", (int) pthread_self(), startIndex, stopIndex);
+
 	// Initialize the search.
 	int foundCount = 0;
 	int max = arr[startIndex];
