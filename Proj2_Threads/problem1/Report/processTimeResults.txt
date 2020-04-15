@@ -1,3 +1,5 @@
+PROCESS TIME RESULTS
+
 QUESTION 1
 1k 			Search took    0.033 ms.
 10k 		Search took    0.089 ms.

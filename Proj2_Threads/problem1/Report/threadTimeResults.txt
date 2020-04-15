@@ -1,3 +1,5 @@
+THREAD TIME RESULTS
+
 QUESTION 1 : X = 1 Thread
 1k			Search took    0.283 ms.
 10k			Search took    0.321 ms.
