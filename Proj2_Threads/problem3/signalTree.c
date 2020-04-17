@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
 				{
 					// Suspend.
 					printf("Suspending process %d.\n", getpid());
-					raise(SIGTSTP);
+					kill(getpid(), SIGSTOP);
 
 					// When resuming, send SIGCONT to child.
 					printf("Resuming process %d.\n", pid);
@@ -126,6 +126,8 @@ int main(int argc, char* argv[])
 					// Something went wrong.
 					printf("Error...\n");
 				}
+
+				break;
 			}
 			else
 			{
@@ -155,11 +157,11 @@ int main(int argc, char* argv[])
 			read(fd[0], (processList + i), sizeof(pid_t));
 			if (i == 25)
 			{
-				printf("%c\n", processNames[i]);
+				printf("(%c)\n", processNames[i]);
 			}
 			else
 			{
-				printf("(%c) -> \n", processNames[i]);
+				printf("(%c) -> ", processNames[i]);
 			}
 		}
 
@@ -172,12 +174,12 @@ int main(int argc, char* argv[])
 		
 		printf("All processes terminated.\n");
 	}
-	else if (processNum == 26)
+	else if (processNum == 25)
 	{
 		// Last child process.
 
 		// Suspend.
-		raise(SIGTSTP);
+		kill(getpid(), SIGSTOP);
 
 		printf("Process %c terminating.\n", processNames[processNum]);
 	}
