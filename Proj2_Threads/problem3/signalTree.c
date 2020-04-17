@@ -92,6 +92,7 @@ int main(int argc, char* argv[])
 		processNum = 0;
 		processList[0] = getpid();
 		write(fd[1], &(processList[0]), sizeof(pid_t));
+		printf("Process %d (%c), ROOT process.\n", getpid(), processNames[0]);
 
 		// Let the root create its chain.
 		pid = fork();
@@ -118,7 +119,8 @@ int main(int argc, char* argv[])
 					kill(getpid(), SIGSTOP);
 
 					// When resuming, send SIGCONT to child.
-					printf("Resuming process %d.\n", pid);
+					printf("Resuming process %d (%c).\n", pid, processNames[processNum]);
+					//printf("Resuming process %d.\n", pid);
 					kill(pid, SIGCONT);
 				}
 				else
@@ -135,6 +137,7 @@ int main(int argc, char* argv[])
 				processNum = i;
 				processList[i] = getpid();
 				write(fd[1], &(processList[i]), sizeof(pid_t));
+				printf("Process %d (%c), Parent is Process %d.\n", getpid(), processNames[processNum], getppid());
 				
 				pid = fork();
 				if (pid < 0)
@@ -151,6 +154,10 @@ int main(int argc, char* argv[])
 	{
 		// Initializer.
 
+		printf("Waiting 3 seconds for processes to finish...\n");
+		// Wait 3 seconds.
+		sleep(3);
+
 		// Display the process tree.
 		for (i = 0; i < 26; i++)
 		{
@@ -165,11 +172,12 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		// Wait 5 seconds.
-		sleep(5);
+		// Wait 3 seconds.
+		printf("Resuming processes in 3 seconds...\n");
+		sleep(3);
 
 		// Send SIGCONT to root.
-		printf("Resuming process %d.\n", processList[0]);
+		printf("Resuming process %d (%c).\n", processList[0], processNames[0]);
 		kill(processList[0], SIGCONT);
 		
 		printf("All processes terminated.\n");
