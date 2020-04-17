@@ -180,7 +180,7 @@ int main(int argc, char* argv[])
 		printf("Resuming process %d (%c).\n", processList[0], processNames[0]);
 		kill(processList[0], SIGCONT);
 		
-		printf("All processes terminated.\n");
+		//printf("All processes terminated.\n");
 	}
 	else if (processNum == 25)
 	{
