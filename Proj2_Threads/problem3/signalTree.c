@@ -109,14 +109,14 @@ int main(int argc, char* argv[])
 				// Parent.
 
 				// Wait for children.
-				pid = wait(&status);
+				pid = waitpid(pid, &status, WUNTRACED);
 				explain_wait_status(pid, status);
 
 				if (WIFSTOPPED(status))
 				{
 					// Suspend.
 					printf("Suspending process %d.\n", getpid());
-					kill(getpid(), SIGSTOP);
+					raise(SIGSTOP);
 
 					// When resuming, send SIGCONT to child.
 					printf("Resuming process %d (%c).\n", pid, processNames[processNum]);
@@ -187,7 +187,7 @@ int main(int argc, char* argv[])
 		// Last child process.
 
 		// Suspend.
-		kill(getpid(), SIGSTOP);
+		raise(SIGSTOP);
 
 		printf("Process %c terminating.\n", processNames[processNum]);
 	}
