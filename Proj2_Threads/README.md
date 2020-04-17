@@ -14,5 +14,9 @@ Nathaniel Glikman nmg116@scarletmail.rutgers.edu
 Gregory Giovannini	gdg44@scarletmail.rutgers.edu 
 
 ### Contributions
+Problem 1: Gregory Giovannini
 
+Problem 3: Gregory Giovannini
+
+Problem 4: Nathaniel Glikman
 
